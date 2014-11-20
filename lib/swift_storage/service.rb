@@ -2,6 +2,8 @@ require 'uri'
 
 class SwiftStorage::Service
 
+  include SwiftStorage::Utils
+
   module Headers
     STORAGE_URL = 'X-Storage-Url'.freeze
     AUTH_TOKEN = 'X-Auth-Token'.freeze
@@ -11,9 +13,6 @@ class SwiftStorage::Service
   end
 
   include Headers
-
-  class AuthError < StandardError
-  end
 
 
   attr_reader          :tenant,
@@ -32,17 +31,14 @@ class SwiftStorage::Service
                  password: ENV['SWIFT_STORAGE_PASSWORD'],
                  endpoint: ENV['SWIFT_STORAGE_ENDPOINT'],
                  temp_url_key: ENV['SWIFT_STORAGE_TEMP_URL_KEY'])
-    @tenant = tenant
-    @username = username
-    @password = password
-    @endpoint = endpoint
     @temp_url_key = temp_url_key
 
-    tenant or raise ArgumentError, 'Tenant is required'
-    username or raise ArgumentError, 'Username is required'
-    password or raise ArgumentError, 'Password is required'
-    endpoint or raise ArgumentError, 'Endpoint is required'
-    @hydra = Typhoeus::Hydra.hydra
+    %w(tenant username password endpoint).each do |n|
+      eval("#{n} or raise ArgumentError, '#{n} is required'")
+      eval("@#{n} = #{n}")
+    end
+
+    @sessions = {}
   end
 
   def authenticate!
@@ -51,9 +47,8 @@ class SwiftStorage::Service
       'X-Auth-Key' => password
     }
     res = request(auth_url, :headers => headers)
-    res.success? or raise AuthError
 
-    h = res.headers
+    h = res.header
     @storage_url = h[STORAGE_URL]
     uri = URI.parse(@storage_url)
     @storage_scheme = uri.scheme
@@ -62,13 +57,19 @@ class SwiftStorage::Service
     @storage_path = uri.path
     @auth_token = h[AUTH_TOKEN]
     @storage_token = h[STORAGE_TOKEN]
-
   end
 
   def authenticated?
     !!(storage_url && auth_token)
   end
 
+  def containers
+    @container_collection ||= SwiftStorage::ContainerCollection.new(self)
+  end
+
+  def account
+    @account ||= SwiftStorage::Account.new(self, tenant)
+  end
 
   def create_temp_url(container, object, expires, method, options = {})
 
@@ -112,48 +113,86 @@ class SwiftStorage::Service
     self.class.escape(*args)
   end
 
+  def request(path_or_url, method: :get, headers: nil, input_stream: nil, output_stream: nil)
+    headers ||= {}
+    headers.merge!(AUTH_TOKEN => auth_token) if authenticated?
+
+    if !(path_or_url =~ /^http/)
+      storage_url or raise ArgumentError, "Not authenticated, call authenticate!()."
+      path_or_url = File.join(storage_url, path_or_url)
+    end
+
+    # Cache HTTP session as url with no path
+    uri = URI.parse(path_or_url)
+    path = uri.path
+    uri.path = ''
+    key = uri.to_s
+
+    s = sessions[key] ||= Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https')
+    s.keep_alive_timeout = 30
+
+    case method
+    when :get
+      req = Net::HTTP::Get.new(path, headers)
+    when :delete
+      req = Net::HTTP::Delete.new(path, headers)
+    when :head
+      req = Net::HTTP::Head.new(path, headers)
+    when :post
+      req = Net::HTTP::Post.new(path, headers)
+    when :put
+      req = Net::HTTP::Put.new(path, headers)
+    else
+      raise ArgumentError, "Method #{method} not supported"
+    end
+    if input_stream
+      if String === input_stream
+        input_stream = StringIO.new(input_stream)
+      end
+      req.body_stream = input_stream
+      req.content_length = input_stream.size
+    end
+
+    if output_stream
+      output_proc = proc do |response|
+        response.read_body do |chunk|
+          output_stream.write(chunk)
+        end
+      end
+    end
+
+    response = s.request(req, &output_proc)
+    check_response!(response)
+    response
+  end
+
   private
 
-  attr_reader          :hydra,
+  attr_reader          :sessions,
                        :username,
                        :password
-
 
   def auth_url
     File.join(endpoint, 'auth/v1.0')
   end
 
-  def request(path_or_url, method: :get, headers: nil, data: nil)
-    headers ||= {}
-    headers.merge!('X-Auth-Token' => auth_token) if authenticated?
-    headers.merge!('Accept' => 'application/json')
-
-    if !(path_or_url =~ /^http/)
-      storage_url or raise ArgumentError, "Cannot make a path request (#{path_or_url}) with no storage URL"
-      path_or_url = File.join(storage_url, path_or_url)
+  def check_response!(response)
+    case response.code.to_i
+    when 200
+      return true
+    when 201
+      return true
+    when 204
+      return true
+    when 401
+      raise AuthError
+    when 403
+      raise AuthError
+    when 404
+      raise NotFoundError
+    else
+      raise ServerError
     end
-
-    req = Typhoeus::Request.new(
-      path_or_url,
-      :method => method,
-      :headers => headers
-    )
-    hydra.queue(req)
-    hydra.run
-    req.response
   end
 
-  def hmac(type, key, data)
-    digest = OpenSSL::Digest.new(type)
-    OpenSSL::HMAC.digest(digest, key, data)
-  end
-
-
-  def sig_to_hex(str)
-    str.unpack("C*").map { |c|
-      c.to_s(16)
-    }.map { |h|
-      h.size == 1 ? "0#{h}" : h
-    }.join
-  end
 end
