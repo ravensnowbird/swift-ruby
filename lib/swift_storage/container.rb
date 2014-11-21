@@ -2,7 +2,6 @@ class SwiftStorage::Container < SwiftStorage::Node
 
   parent_node          :service
 
-  header_prefix              'X-Container'.freeze
 
   def relative_path
     name

@@ -4,17 +4,6 @@ class SwiftStorage::Service
 
   include SwiftStorage::Utils
 
-  module Headers
-    STORAGE_URL = 'X-Storage-Url'.freeze
-    AUTH_TOKEN = 'X-Auth-Token'.freeze
-    AUTH_USER = 'X-Auth-User'.freeze
-    AUTH_KEY = 'X-Auth-Key'.freeze
-    STORAGE_TOKEN = 'X-Storage-Token'.freeze
-  end
-
-  include Headers
-
-
   attr_reader          :tenant,
                        :endpoint,
                        :storage_url,
@@ -43,20 +32,20 @@ class SwiftStorage::Service
 
   def authenticate!
     headers = {
-      'X-Auth-User' => "#{tenant}:#{username}",
-      'X-Auth-Key' => password
+      Headers::AUTH_USER => "#{tenant}:#{username}",
+      Headers::AUTH_KEY => password
     }
     res = request(auth_url, :headers => headers)
 
     h = res.header
-    @storage_url = h[STORAGE_URL]
+    @storage_url = h[Headers::STORAGE_URL]
     uri = URI.parse(@storage_url)
     @storage_scheme = uri.scheme
     @storage_host = uri.host
     @storage_port = uri.port
     @storage_path = uri.path
-    @auth_token = h[AUTH_TOKEN]
-    @storage_token = h[STORAGE_TOKEN]
+    @auth_token = h[Headers::AUTH_TOKEN]
+    @storage_token = h[Headers::STORAGE_TOKEN]
   end
 
   def authenticated?
@@ -75,6 +64,7 @@ class SwiftStorage::Service
 
     scheme = options[:scheme] || storage_scheme
 
+    method = method.to_s.upcase
     # Limit methods
     %w{GET PUT HEAD}.include?(method) or raise ArgumentError, "Only GET, PUT, HEAD supported"
 
@@ -113,9 +103,14 @@ class SwiftStorage::Service
     self.class.escape(*args)
   end
 
-  def request(path_or_url, method: :get, headers: nil, input_stream: nil, output_stream: nil)
+  def request(path_or_url,
+              method: :get,
+              headers: nil,
+              input_stream: nil,
+              output_stream: nil)
     headers ||= {}
-    headers.merge!(AUTH_TOKEN => auth_token) if authenticated?
+    headers.merge!(Headers::AUTH_TOKEN => auth_token) if authenticated?
+    headers.merge!(Headers::CONNECTION => 'keep-alive', Headers::PROXY_CONNECTION => 'keep-alive')
 
     if !(path_or_url =~ /^http/)
       storage_url or raise ArgumentError, "Not authenticated, call authenticate!()."
@@ -128,8 +123,14 @@ class SwiftStorage::Service
     uri.path = ''
     key = uri.to_s
 
-    s = sessions[key] ||= Net::HTTP.start(uri.host, uri.port, :use_ssl => uri.scheme == 'https')
-    s.keep_alive_timeout = 30
+    if sessions[key].nil?
+      s = sessions[key] = Net::HTTP.new(uri.host, uri.port)
+      s.use_ssl = uri.scheme == 'https'
+      #s.set_debug_output($stderr)
+      s.keep_alive_timeout = 30
+      s.start
+    end
+    s = sessions[key]
 
     case method
     when :get
@@ -145,6 +146,7 @@ class SwiftStorage::Service
     else
       raise ArgumentError, "Method #{method} not supported"
     end
+
     if input_stream
       if String === input_stream
         input_stream = StringIO.new(input_stream)
@@ -177,18 +179,14 @@ class SwiftStorage::Service
   end
 
   def check_response!(response)
-    case response.code.to_i
-    when 200
+    case response.code
+    when /^2/
       return true
-    when 201
-      return true
-    when 204
-      return true
-    when 401
+    when '401'
       raise AuthError
-    when 403
+    when '403'
       raise AuthError
-    when 404
+    when '404'
       raise NotFoundError
     else
       raise ServerError

@@ -3,13 +3,11 @@ class SwiftStorage::Node
   include SwiftStorage::Utils
 
   attr_accessor          :parent,
-                         :name,
-                         :options
+                         :name
 
-  def initialize(parent, name=nil, options={})
+  def initialize(parent, name=nil)
     @parent = parent
     @name = name
-    @options = options
   end
 
   def request(*args)
@@ -19,7 +17,7 @@ class SwiftStorage::Node
   def service
     unless defined?(@service)
       p = parent
-      while !(SwiftStorage::Service === p)
+      while p && !(SwiftStorage::Service === p)
          p = p.parent
       end
       @service = p
@@ -48,20 +46,35 @@ class SwiftStorage::Node
   end
 
   def headers
-    unless defined?(@headers)
-      response = request(relative_path, :method => :head)
+    return @headers if @headers
 
-      m = {}
-      response.to_hash.each_pair do |k,v|
-        if k =~ /^#{self.class.header_prefix}-?(.+)/i
-          k = $1
-        end
-        k = k.downcase.gsub('-', '_')
-        m[k] = v
+    response = request(relative_path, :method => :head)
+
+    h = {}
+    metadata = h[:metadata] = {}
+    response.to_hash.each_pair do |k,v|
+      if k =~ /^X-#{self.class.header_name}-Meta-?(.+)/i
+        k = $1
+        t = metadata
+      elsif k =~ /^X-#{self.class.header_name}-?(.+)/i
+        k = $1
+        t = h
+      else
+        t = h
       end
-      @headers = struct(m)
+      k = k.downcase.gsub(/\W/, '_')
+      v = v.first if v.respond_to?(:to_ary)
+      t[k] = v
     end
-    @headers
+    @headers = struct(h)
+  end
+
+  def metadata
+    headers.metadata
+  end
+
+  def clear_cache
+    @headers = nil
   end
 
   private
@@ -70,9 +83,8 @@ class SwiftStorage::Node
     Struct.new(*h.keys.map(&:to_sym)).new(*h.values)
   end
 
-  def self.header_prefix(prefix=nil)
-    @header_prefix = prefix if prefix
-    @header_prefix
+  def self.header_name
+    self.name.split(':').last
   end
 
 
@@ -89,6 +101,18 @@ class SwiftStorage::Node
       parent
     end
   end
+
+  def merge_metadata(headers, metadata)
+    return if metadata.nil?
+    metadata.each do |k,v|
+      sanitized_key = k.to_s.gsub(/\W/, '-')
+      sanitized_key = sanitized_key.split('-')
+      full_key = ['X', self.class.header_name, 'Meta'] + sanitized_key
+      full_key = full_key.map(&:capitalize).join('-')
+      headers[full_key] = v.to_s
+    end
+  end
+
 
 end
 
