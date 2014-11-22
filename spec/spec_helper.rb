@@ -4,7 +4,7 @@ require_relative "support/local_server"
 module TestServerMixin
 
   def h
-    SwiftStorage::Service::Headers
+    SwiftStorage::Headers
   end
 
   def self.run

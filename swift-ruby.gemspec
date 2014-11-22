@@ -28,5 +28,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "guard-rspec", "~> 4.3.1"
   spec.add_development_dependency "rack", "~> 1.5.2"
   spec.add_development_dependency "yard", "~> 0.8.7.6"
-  spec.add_development_dependency "redcarpet", "~> 0.8.7.6"
+  spec.add_development_dependency "redcarpet", "~> 3.2.0"
 end

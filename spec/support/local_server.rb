@@ -77,8 +77,10 @@ class LocalTestServer
   end
 
   def running?
-    res = Typhoeus.get("#{base_url}/__ping__")
-    res.success? && res.body == LocalTestServer::READY_MESSAGE
+    uri = URI("#{base_url}/__ping__")
+
+    res = Net::HTTP.get(uri) rescue nil
+    res == LocalTestServer::READY_MESSAGE
   end
 
 end

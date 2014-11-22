@@ -3,6 +3,7 @@ require 'uri'
 class SwiftStorage::Service
 
   include SwiftStorage::Utils
+  include SwiftStorage
 
   attr_reader          :tenant,
                        :endpoint,

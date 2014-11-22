@@ -6,6 +6,8 @@
 #
 class SwiftStorage::Object < SwiftStorage::Node
 
+  include SwiftStorage
+
   parent_node                :container
 
 
