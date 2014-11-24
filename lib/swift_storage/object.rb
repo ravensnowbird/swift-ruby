@@ -11,7 +11,7 @@ class SwiftStorage::Object < SwiftStorage::Node
   parent_node                :container
 
 
-  header_attributes          :content_lenght,
+  header_attributes          :content_length,
                              :content_type
 
   # Read the object data
