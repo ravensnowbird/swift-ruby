@@ -49,18 +49,49 @@ module TestServerMixin
     server.app.mock_body = new_body
   end
 
+  def random_length
+    Random.rand(5000) + 1000
+  end
+
 
 end
 
-RSpec::Matchers.define :send_headers do |expected|
+RSpec::Matchers.define :send_request do |method, path, headers, body|
   match do |actual|
     actual.call()
-    h = {}
-    expected.each_pair do |k,v|
-      h["HTTP_#{k.gsub('-', '_').upcase}"] = v
-    end
+    env = server.app.last_env
 
-    (h.to_a - server.app.last_env.to_a).empty?
+    @actual_method = env['REQUEST_METHOD'].downcase
+    @actual_path = env['PATH_INFO']
+    @actual_body = env['rack.input'].read
+
+    @method_match = @actual_method == method.to_s.downcase
+
+    @path_match = @actual_path == path
+    @headers_match = true
+
+    headers.each_pair do |k,v|
+      k = k.gsub('-', '_').upcase
+      actual_value =  env[k] || env["HTTP_#{k}"]
+      if v.to_s != actual_value.to_s
+        @unatched_header = "Header #{k} should be #{v}, got #{actual_value||'null'}"
+        @headers_match = false
+        break
+      end
+    end if headers
+    @body_match = true
+    @body_match = @actual_body == body if body
+
+    @method_match && @path_match && @headers_match && @body_match
+  end
+
+  failure_message do
+    r = []
+    r << "Method should be #{method}, got #{@actual_method}" if !@method_match
+    r << "Path should be #{path}, got #{@actual_path}" if !@path_match
+    r << "Unmatched headers #{@unatched_header}" if !@headers_match
+    r << "Body doesn't match, for #{@actual_body} expected #{body}" if !@body_match
+    r.join("\n")
   end
 
   def supports_block_expectations?

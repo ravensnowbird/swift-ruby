@@ -83,11 +83,12 @@ class SwiftStorage::Object < SwiftStorage::Node
 
     merge_metadata(h, metadata)
 
-    request(relative_path,
-            :method => (input_stream ? :put : :post),
-            :headers => h,
-            :input_stream => input_stream)
+    response = request(relative_path,
+                       :method => (input_stream ? :put : :post),
+                       :headers => h,
+                       :input_stream => input_stream)
     clear_cache
+    extract_headers(response)
     input_stream
   end
 

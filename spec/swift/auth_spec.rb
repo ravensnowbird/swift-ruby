@@ -9,7 +9,7 @@ RSpec.describe 'Auth' do
       h::STORAGE_TOKEN => 'storage_token'
     )
 
-    expect{ subject.authenticate! }.to send_headers({
+    expect{ subject.authenticate! }.to send_request(:get, '/auth/v1.0', {
       h::AUTH_USER => 'test:testuser',
       h::AUTH_KEY => 'testpassword'
     })
