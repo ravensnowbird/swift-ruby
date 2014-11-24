@@ -122,7 +122,7 @@ class SwiftStorage::Service
       path_or_url = File.join(storage_url, path_or_url)
     end
 
-    # Cache HTTP session as url with no path
+    # Cache HTTP session as url with no path (scheme, host, port)
     uri = URI.parse(path_or_url)
     path = uri.path
     uri.path = ''

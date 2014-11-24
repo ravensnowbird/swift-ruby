@@ -12,6 +12,8 @@ module SwiftStorage
     CONTENT_DISPOSITION = 'Content-Disposition'.freeze
     DELETE_AT = 'X-Delete-At'.freeze
     DELETE_AFTER = 'X-Delete-After'.freeze
+    CACHE_CONTROL = 'Cache-Control'.freeze
+    EXPIRES = 'Expires'.freeze
   end
 
 end

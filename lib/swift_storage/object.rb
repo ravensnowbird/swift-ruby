@@ -1,3 +1,5 @@
+require "time"
+
 # @attr [String] content_length
 #  Content length of the Object, in bytes.
 #
@@ -40,6 +42,9 @@ class SwiftStorage::Object < SwiftStorage::Node
   #
   # This will always make a request to the API server and will not use cache
   #
+  # @note If you want to only update the metadata, you may omit `input_stream`
+  # but you must specify all other options otherwise they will be overwritten.
+  #
   # @param input_stream [String, IO]
   #  The data to upload, if ommited, the write will not override the body and instead it will update
   #  the metadata and other options. If `input_stream` is an `IO` object, it must
@@ -57,6 +62,15 @@ class SwiftStorage::Object < SwiftStorage::Node
   # @param delete_after [Time]
   #  If set, the server will delete the object after the specified time.
   #
+  # @param cache_control [String]
+  #  The value for the 'Cache-Control' header when serving the object. The value
+  #  is not parsed and served unmodified as is. If you set max-age, it will
+  #  always be served with the same max-age value. To have the resource expire
+  #  at point of time, use the expires header.
+  #
+  # @param expires [Time]
+  #  Set the Expires header.
+  #
   # @return [input_stream]
   #   Return the `input_stream` argument, or `nil` if `input_stream` is ommited.
   #
@@ -65,6 +79,8 @@ class SwiftStorage::Object < SwiftStorage::Node
             attachment: false,
             delete_at: nil,
             delete_after: nil,
+            cache_control: nil,
+            expires: nil,
             metadata: nil)
 
     h = {
@@ -73,7 +89,7 @@ class SwiftStorage::Object < SwiftStorage::Node
 
     input_stream.nil? or content_type or raise ArgumentError, 'Content_type is required if input_stream is given'
 
-    h[Headers::CONTENT_TYPE] = content_type || ''
+    h[Headers::CONTENT_TYPE] = content_type if content_type
 
     if delete_at
       h[Headers::DELETE_AT] = delete_at.to_i.to_s
@@ -81,12 +97,15 @@ class SwiftStorage::Object < SwiftStorage::Node
       h[Headers::DELETE_AFTER] = delete_after.to_i.to_s
     end
 
+    h[Headers::EXPIRES] = expires.httpdate if expires
+    h[Headers::CACHE_CONTROL] = cache_control if cache_control
+
     merge_metadata(h, metadata)
 
-    response = request(relative_path,
-                       :method => (input_stream ? :put : :post),
-                       :headers => h,
-                       :input_stream => input_stream)
+    request(relative_path,
+            :method => (input_stream ? :put : :post),
+            :headers => h,
+            :input_stream => input_stream)
     clear_cache
     input_stream
   end
