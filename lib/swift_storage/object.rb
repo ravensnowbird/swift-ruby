@@ -88,7 +88,6 @@ class SwiftStorage::Object < SwiftStorage::Node
                        :headers => h,
                        :input_stream => input_stream)
     clear_cache
-    extract_headers(response)
     input_stream
   end
 

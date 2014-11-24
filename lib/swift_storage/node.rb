@@ -45,7 +45,7 @@ class SwiftStorage::Node
     raise NotImplemented
   end
 
-  def extract_headers(response=nil)
+  def extract_headers
     return @headers if @headers
 
     response ||= request(relative_path, :method => :head)
