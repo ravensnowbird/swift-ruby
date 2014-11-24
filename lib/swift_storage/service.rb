@@ -27,6 +27,7 @@ class SwiftStorage::Service
       eval("#{n} or raise ArgumentError, '#{n} is required'")
       eval("@#{n} = #{n}")
     end
+    self.storage_url = File.join(endpoint, 'v1', "AUTH_#{tenant}")
 
     @sessions = {}
   end
@@ -39,12 +40,7 @@ class SwiftStorage::Service
     res = request(auth_url, :headers => headers)
 
     h = res.header
-    @storage_url = h[Headers::STORAGE_URL]
-    uri = URI.parse(@storage_url)
-    @storage_scheme = uri.scheme
-    @storage_host = uri.host
-    @storage_port = uri.port
-    @storage_path = uri.path
+    self.storage_url = h[Headers::STORAGE_URL]
     @auth_token = h[Headers::AUTH_TOKEN]
     @storage_token = h[Headers::STORAGE_TOKEN]
   end
@@ -59,6 +55,15 @@ class SwiftStorage::Service
 
   def account
     @account ||= SwiftStorage::Account.new(self, tenant)
+  end
+
+  def storage_url=(new_url)
+    uri = URI.parse(new_url)
+    @storage_url = new_url
+    @storage_scheme = uri.scheme
+    @storage_host = uri.host
+    @storage_port = uri.port
+    @storage_path = uri.path
   end
 
   def create_temp_url(container, object, expires, method, options = {})
@@ -114,8 +119,7 @@ class SwiftStorage::Service
     headers.merge!(Headers::CONNECTION => 'keep-alive', Headers::PROXY_CONNECTION => 'keep-alive')
 
     if !(path_or_url =~ /^http/)
-      base_url = storage_url || File.join(endpoint, 'v1', "AUTH_#{tenant}")
-      path_or_url = File.join(base_url, path_or_url)
+      path_or_url = File.join(storage_url, path_or_url)
     end
 
     # Cache HTTP session as url with no path
@@ -190,6 +194,8 @@ class SwiftStorage::Service
     when '404'
       raise NotFoundError
     else
+      puts response.code
+      puts response.body
       raise ServerError
     end
   end
