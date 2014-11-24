@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe 'Temporary URL', :focus => true do
+RSpec.describe 'Temporary URL' do
   subject { swift_service }
   it "creates an url" do
     headers(
