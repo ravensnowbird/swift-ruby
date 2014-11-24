@@ -76,9 +76,9 @@ class SwiftStorage::Object < SwiftStorage::Node
     h[Headers::CONTENT_TYPE] = content_type || ''
 
     if delete_at
-      h[Headers::DELETE_AT] = delete_at.to_i
+      h[Headers::DELETE_AT] = delete_at.to_i.to_s
     elsif delete_after
-      h[Headers::DELETE_AFTER] = delete_after.to_i
+      h[Headers::DELETE_AFTER] = delete_after.to_i.to_s
     end
 
     merge_metadata(h, metadata)
