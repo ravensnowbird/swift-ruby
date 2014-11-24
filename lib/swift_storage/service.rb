@@ -114,8 +114,8 @@ class SwiftStorage::Service
     headers.merge!(Headers::CONNECTION => 'keep-alive', Headers::PROXY_CONNECTION => 'keep-alive')
 
     if !(path_or_url =~ /^http/)
-      storage_url or raise ArgumentError, "Not authenticated, call authenticate!()."
-      path_or_url = File.join(storage_url, path_or_url)
+      base_url = storage_url || File.join(endpoint, 'v1', "AUTH_#{tenant}")
+      path_or_url = File.join(base_url, path_or_url)
     end
 
     # Cache HTTP session as url with no path
