@@ -111,7 +111,7 @@ class SwiftStorage::Node
     return if metadata.nil?
     metadata.each do |k,v|
       sanitized_key = k.to_s.gsub(/\W/, '-')
-      sanitized_key = sanitized_key.split('-').reject{|v| v.nil? || v.empty?}
+      sanitized_key = sanitized_key.split('-').reject{|o| o.nil? || o.empty?}
       full_key = ['X', self.class.header_name, 'Meta'] + sanitized_key
       full_key = full_key.map(&:capitalize).join('-')
       headers[full_key] = v.to_s
