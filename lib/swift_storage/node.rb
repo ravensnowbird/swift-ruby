@@ -11,7 +11,7 @@ class SwiftStorage::Node
   end
 
   def request(*args)
-    parent.request(*args)
+    service.request(*args)
   end
 
   def service
