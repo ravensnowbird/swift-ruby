@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = SwiftStorage::VERSION
   spec.authors       = ["Nicolas Goy"]
   spec.email         = ["kuon@goyman.com"]
-  spec.summary       = %q{TODO: Write a short summary. Required.}
-  spec.description   = %q{TODO: Write a longer description. Optional.}
+  spec.summary       = %q{Swift storage client.}
+  spec.description   = %q{Simple Openstack Swift storage client.}
   spec.homepage      = ""
   spec.license       = "MIT"
 
