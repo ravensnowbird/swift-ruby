@@ -30,12 +30,6 @@ class SwiftStorage::Node
     @service
   end
 
-  def get_json(path)
-    headers = {'Accept' => 'application/json'}
-    response = request(path, :headers => headers)
-    Oj.load(response.body)
-  end
-
   def get_lines(path)
     headers = {'Accept' => 'text/plain'}
     response = request(path, :headers => headers)
