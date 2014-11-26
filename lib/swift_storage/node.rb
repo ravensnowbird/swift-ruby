@@ -49,7 +49,7 @@ class SwiftStorage::Node
     raise NotImplemented
   end
 
-  def extract_headers
+  def headers
     return @headers if @headers
 
     response ||= request(relative_path, :method => :head)
@@ -74,7 +74,7 @@ class SwiftStorage::Node
   end
 
   def metadata
-    @metadata ||= struct(extract_headers.metadata)
+    @metadata ||= struct(headers.metadata)
   end
 
   def clear_cache
@@ -88,6 +88,9 @@ class SwiftStorage::Node
     Struct.new(*h.keys.map(&:to_sym)).new(*h.values)
   end
 
+
+  private
+
   def self.header_name
     self.name.split(':').last
   end
@@ -96,7 +99,7 @@ class SwiftStorage::Node
   def self.header_attributes(*args)
     args.each do |a|
       define_method(a.to_sym) do
-        extract_headers[a]
+        headers[a]
       end
     end
   end
