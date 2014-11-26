@@ -39,7 +39,12 @@ class SwiftStorage::Node
   def get_lines(path)
     headers = {'Accept' => 'text/plain'}
     response = request(path, :headers => headers)
-    response.body.lines.map(&:strip)
+    body = response.body
+    if body.nil? || body.empty?
+      []
+    else
+      body.lines.map(&:strip)
+    end
   end
 
   def to_s
