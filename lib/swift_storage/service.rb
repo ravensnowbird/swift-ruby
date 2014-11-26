@@ -190,12 +190,10 @@ class SwiftStorage::Service
     when '401'
       raise AuthError
     when '403'
-      raise AuthError
+      raise ForbiddenError
     when '404'
       raise NotFoundError
     else
-      puts response.code
-      puts response.body
       raise ServerError
     end
   end

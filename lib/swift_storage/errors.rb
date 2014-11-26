@@ -9,4 +9,7 @@ module SwiftStorage::Errors
   class ServerError < StandardError
   end
 
+  class ForbiddenError < StandardError
+  end
+
 end
