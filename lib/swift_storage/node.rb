@@ -118,6 +118,8 @@ class SwiftStorage::Node
     end
   end
 
+  private
+  H = SwiftStorage::Headers
 
 end
 
