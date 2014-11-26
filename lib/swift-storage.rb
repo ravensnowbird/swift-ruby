@@ -1,5 +1,4 @@
 require "net/http"
-require "oj"
 require "swift_storage/version"
 require "swift_storage/errors"
 require "swift_storage/utils"
