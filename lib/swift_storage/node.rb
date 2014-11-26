@@ -14,6 +14,11 @@ class SwiftStorage::Node
     service.request(*args)
   end
 
+  # Returns the service for this node
+  #
+  # @return [SwiftStorage::Service]
+  #  The service this node is bound to
+  #
   def service
     unless defined?(@service)
       p = parent
