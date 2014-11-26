@@ -82,10 +82,14 @@ class SwiftStorage::Node
     @metadata = nil
   end
 
-  private
-  def struct(h)
-    return nil if h.empty?
-    Struct.new(*h.keys.map(&:to_sym)).new(*h.values)
+  def exists?
+    request(relative_path, :method => :head) && true
+  rescue SwiftStorage::Errors::NotFoundError
+    false
+  end
+
+  def delete
+    request(relative_path, :method => :delete)
   end
 
 

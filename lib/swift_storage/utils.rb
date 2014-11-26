@@ -15,5 +15,9 @@ module SwiftStorage::Utils
     }.join
   end
 
+  def struct(h)
+    return nil if h.empty?
+    Struct.new(*h.keys.map(&:to_sym)).new(*h.values)
+  end
 
 end

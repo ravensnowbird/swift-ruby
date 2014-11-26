@@ -6,15 +6,22 @@ require "time"
 # @attr [String] content_type
 #  Content type of the Object, eg: `image/png`.
 #
+# @attr [String] expires
+#  When the object is set to expire.
+#
+# @attr [String] cache_control
+#  Object cache control header.
+#
 class SwiftStorage::Object < SwiftStorage::Node
 
-  include SwiftStorage
 
   parent_node                :container
 
 
   header_attributes          :content_length,
-                             :content_type
+                             :content_type,
+                             :expires,
+                             :cache_control
 
   # Read the object data
   #
@@ -43,7 +50,10 @@ class SwiftStorage::Object < SwiftStorage::Node
   # This will always make a request to the API server and will not use cache
   #
   # @note If you want to only update the metadata, you may omit `input_stream`
-  # but you must specify all other options otherwise they will be overwritten.
+  #  but you must specify all other options otherwise they will be overwritten.
+  #
+  # @note Some headers specified here may not work with a specific swift server
+  #  as they must be enabled in the server configuration.
   #
   # @param input_stream [String, IO]
   #  The data to upload, if ommited, the write will not override the body and instead it will update
@@ -71,6 +81,11 @@ class SwiftStorage::Object < SwiftStorage::Node
   # @param expires [Time]
   #  Set the Expires header.
   #
+  # @param object_manifest [String]
+  #  When set, this object acts as a large object manifest. The value should be
+  #  `<container>/<prefix>` where `<container>` is the container the object
+  #  segments are in and `<prefix>` is the common prefix for all the segments.
+  #
   # @return [input_stream]
   #   Return the `input_stream` argument, or `nil` if `input_stream` is ommited.
   #
@@ -81,29 +96,33 @@ class SwiftStorage::Object < SwiftStorage::Node
             delete_after: nil,
             cache_control: nil,
             expires: nil,
+            object_manifest: nil,
             metadata: nil)
 
-    h = {
-      Headers::CONTENT_DISPOSITION => attachment ? 'attachment' : 'inline'
-    }
+    h = {}
 
     input_stream.nil? or content_type or raise ArgumentError, 'Content_type is required if input_stream is given'
 
-    h[Headers::CONTENT_TYPE] = content_type if content_type
+    object_manifest.nil? or input_stream.nil? or raise ArgumentError, 'Input must be nil on object manigest'
+
+    h[H::CONTENT_DISPOSITION] = attachment ? 'attachment' : 'inline'
+    h[H::OBJECT_MANIFEST] = object_manifest if object_manifest
+    h[H::CONTENT_TYPE] = content_type if content_type
+    h[H::EXPIRES] = expires.httpdate if expires
+    h[H::CACHE_CONTROL] = cache_control if cache_control
 
     if delete_at
-      h[Headers::DELETE_AT] = delete_at.to_i.to_s
+      h[H::DELETE_AT] = delete_at.to_i.to_s
     elsif delete_after
-      h[Headers::DELETE_AFTER] = delete_after.to_i.to_s
+      h[H::DELETE_AFTER] = delete_after.to_i.to_s
     end
-
-    h[Headers::EXPIRES] = expires.httpdate if expires
-    h[Headers::CACHE_CONTROL] = cache_control if cache_control
 
     merge_metadata(h, metadata)
 
+    method =  input_stream || object_manifest ? :put : :post
+
     request(relative_path,
-            :method => (input_stream ? :put : :post),
+            :method => method,
             :headers => h,
             :input_stream => input_stream)
     clear_cache
@@ -130,7 +149,7 @@ class SwiftStorage::Object < SwiftStorage::Node
 
   # Returns the object's URL
   #
-  # @note This URL is unsigned and the container authorization will apply. If
+  # @note This URL is unsigneds and the container authorization will apply. If
   #  the container do not allow public access, this URL will require an
   #  authentication token.
   #
@@ -142,6 +161,9 @@ class SwiftStorage::Object < SwiftStorage::Node
   end
 
   private
+
+  H = SwiftStorage::Headers
+
   def relative_path
     File.join(container.name, name)
   end
