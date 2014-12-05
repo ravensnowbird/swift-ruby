@@ -30,9 +30,9 @@ class SwiftStorage::Node
     @service
   end
 
-  def get_lines(path)
+  def get_lines(path, prefix: nil)
     headers = {'Accept' => 'text/plain'}
-    response = request(path, :headers => headers)
+    response = request(path, :headers => headers, :params => {:prefix => prefix})
     body = response.body
     if body.nil? || body.empty?
       []
