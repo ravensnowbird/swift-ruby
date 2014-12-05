@@ -11,7 +11,7 @@ class SwiftStorage::ObjectCollection < SwiftStorage::Node
   #  Objects in this collection
   #
   def all
-    get_lines(container.name).map { |name| SwiftStorage::Object.new(container, name)}
+    get_objects
   end
 
   # Return a particular object
@@ -26,7 +26,16 @@ class SwiftStorage::ObjectCollection < SwiftStorage::Node
   #  Object with given name
   #
   def [](name)
-    SwiftStorage::Object.new(container, name)
+    SwiftStorage::Object.new(container, name) if name
+  end
+
+  def with_prefix(prefix)
+    get_objects(prefix)
+  end
+
+  private
+  def get_objects(prefix=nil)
+    get_lines(container.name, :prefix => prefix).map { |name| SwiftStorage::Object.new(container, name)}
   end
 
 end
