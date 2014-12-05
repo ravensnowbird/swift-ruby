@@ -1,6 +1,6 @@
 require "spec_helper"
 
-RSpec.describe 'Object' do
+RSpec.describe SwiftStorage::Object do
   subject { swift_service.containers['somecontainer'].objects['someobject'] }
   it "read" do
     headers(
@@ -32,14 +32,15 @@ RSpec.describe 'Object' do
                     :attachment => true,
                     :delete_at => Time.at(4000),
                     :metadata => {:foo => :bar, :jon => :doe, 'WeiRd ^^!+Format With!! Spaces $$$' => 'weird'})
-      }.to send_request(:put, '/v1/AUTH_test/somecontainer/someobject', {
+    }.to send_request(:put, '/v1/AUTH_test/somecontainer/someobject',
+                      :headers => {
       'Content-Length' => b.length,
       'Content-Disposition' => 'attachment',
       'X-Delete-At' => 4000,
       'X-Object-Meta-Foo' => 'bar',
       'X-Object-Meta-Jon' => 'doe',
       'X-Object-Meta-Weird-Format-With-Spaces' => 'weird',
-    }, b)
+    }, :body => b)
     expect(subject.metadata.jon_doe).to eq('a meta')
   end
 

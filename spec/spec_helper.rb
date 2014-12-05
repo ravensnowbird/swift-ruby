@@ -56,7 +56,10 @@ module TestServerMixin
 
 end
 
-RSpec::Matchers.define :send_request do |method, path, headers, body|
+RSpec::Matchers.define :send_request do |method, path, options={}|
+  headers = options[:headers]
+  body = options[:body]
+  params = options[:params]
   match do |actual|
     actual.call()
     env = server.app.last_env
@@ -82,7 +85,14 @@ RSpec::Matchers.define :send_request do |method, path, headers, body|
     @body_match = true
     @body_match = @actual_body == body if body
 
-    @method_match && @path_match && @headers_match && @body_match
+    @params_match = true
+    if params
+      @actual_params = env['QUERY_STRING']
+      @params_string = URI.encode_www_form(params)
+      @params_match = @params_string == @actual_params
+    end
+
+    @method_match && @path_match && @headers_match && @body_match && @params_match
   end
 
   failure_message do
@@ -91,6 +101,7 @@ RSpec::Matchers.define :send_request do |method, path, headers, body|
     r << "Path should be #{path}, got #{@actual_path}" if !@path_match
     r << "Unmatched headers #{@unatched_header}" if !@headers_match
     r << "Body doesn't match, for #{@actual_body} expected #{body}" if !@body_match
+    r << "Params should be #{@params_string}, got #{@actual_params}" if !@params_match
     r.join("\n")
   end
 
