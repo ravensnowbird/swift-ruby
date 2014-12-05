@@ -92,6 +92,10 @@ class SwiftStorage::Node
     request(relative_path, :method => :delete)
   end
 
+  def delete_if_exists
+    delete rescue SwiftStorage::NotFoundError
+  end
+
 
   private
 
