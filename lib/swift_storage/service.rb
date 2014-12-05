@@ -112,6 +112,7 @@ class SwiftStorage::Service
   def request(path_or_url,
               method: :get,
               headers: nil,
+              params: nil,
               input_stream: nil,
               output_stream: nil)
     headers ||= {}
@@ -139,6 +140,11 @@ class SwiftStorage::Service
 
     case method
     when :get
+      if params.respond_to?(:to_hash)
+        params.reject!{|k,v| v.nil?}
+        path << '?'
+        path << URI.encode_www_form(params)
+      end
       req = Net::HTTP::Get.new(path, headers)
     when :delete
       req = Net::HTTP::Delete.new(path, headers)
