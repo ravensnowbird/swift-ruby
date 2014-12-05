@@ -44,6 +44,23 @@ class SwiftStorage::Object < SwiftStorage::Node
     end
   end
 
+  # Stream the object data to a file
+  #
+  # This will always make a request to the API server and will not use cache
+  #
+  # @param output_path [String]
+  #  The path to the output file.
+  #
+  # @return [output_path]
+  #  The passed path.
+  #
+  def stream_to_file(output_path)
+    open(output_path, 'wb') do |io|
+      read(io)
+    end
+    output_path
+  end
+
 
   # Write the object
   #
