@@ -26,7 +26,7 @@ class SwiftStorage::ContainerCollection < SwiftStorage::Node
   #  Container with given name
   #
   def [](name)
-    SwiftStorage::Container.new(service, name)
+    SwiftStorage::Container.new(service, name) if name
   end
 
 end
