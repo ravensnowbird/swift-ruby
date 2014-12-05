@@ -95,8 +95,10 @@ class SwiftStorage::Object < SwiftStorage::Node
   #  always be served with the same max-age value. To have the resource expire
   #  at point of time, use the expires header.
   #
-  # @param expires [Time]
+  # @param expires [Symbol, Time]
   #  Set the Expires header.
+  #  Expires may also have the special value `:never` which override
+  #  `cache_control` and set the expiration time in a long time.
   #
   # @param object_manifest [String]
   #  When set, this object acts as a large object manifest. The value should be
@@ -121,6 +123,11 @@ class SwiftStorage::Object < SwiftStorage::Node
     input_stream.nil? or content_type or raise ArgumentError, 'Content_type is required if input_stream is given'
 
     object_manifest.nil? or input_stream.nil? or raise ArgumentError, 'Input must be nil on object manigest'
+
+    if expires == :never
+      expires = Time.at(4_000_000_000)
+      cache_control = "public, max_age=4000000000"
+    end
 
     h[H::CONTENT_DISPOSITION] = attachment ? 'attachment' : 'inline'
     h[H::OBJECT_MANIFEST] = object_manifest if object_manifest
