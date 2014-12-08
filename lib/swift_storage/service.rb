@@ -194,13 +194,13 @@ class SwiftStorage::Service
     when /^2/
       return true
     when '401'
-      raise AuthError
+      raise AuthError, response.body
     when '403'
-      raise ForbiddenError
+      raise ForbiddenError, response.body
     when '404'
-      raise NotFoundError
+      raise NotFoundError, response.body
     else
-      raise ServerError
+      raise ServerError, response.body
     end
   end
 
