@@ -93,7 +93,9 @@ class SwiftStorage::Node
   end
 
   def delete_if_exists
-    delete rescue SwiftStorage::NotFoundError
+    delete
+  rescue SwiftStorage::Errors::NotFoundError
+    false
   end
 
 
