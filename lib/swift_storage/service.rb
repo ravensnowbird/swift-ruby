@@ -9,6 +9,7 @@ class SwiftStorage::Service
                        :endpoint,
                        :storage_url,
                        :auth_token,
+                       :auth_at,
                        :storage_token,
                        :storage_scheme,
                        :storage_host,
@@ -33,6 +34,9 @@ class SwiftStorage::Service
   end
 
   def authenticate!
+    @auth_token = nil
+    @storage_token = nil
+    @auth_at = nil
     headers = {
       Headers::AUTH_USER => "#{tenant}:#{username}",
       Headers::AUTH_KEY => password
@@ -43,6 +47,7 @@ class SwiftStorage::Service
     self.storage_url = h[Headers::STORAGE_URL]
     @auth_token = h[Headers::AUTH_TOKEN]
     @storage_token = h[Headers::STORAGE_TOKEN]
+    @auth_at = Time.new
   end
 
   def authenticated?
@@ -175,7 +180,17 @@ class SwiftStorage::Service
     end
 
     response = s.request(req, &output_proc)
-    check_response!(response)
+    begin
+      check_response!(response)
+    rescue AuthError
+      # If token is at least 60 second old, we try to get a new one
+      if @auth_at && (Time.now - @auth_at).to_i > 60
+        authenticate!
+        response = s.request(req, &output_proc)
+      else
+        raise
+      end
+    end
     response
   end
 
