@@ -89,7 +89,14 @@ class SwiftStorage::Node
   end
 
   def delete
-    request(relative_path, :method => :delete)
+    # We try a few times, as the swift cluster might need time to get ready
+    3.times do |i|
+      begin
+        return request(relative_path, :method => :delete)
+      rescue SwiftStorage::Errors::ServerError
+        sleep(i**2)
+      end
+    end
   end
 
   def delete_if_exists
