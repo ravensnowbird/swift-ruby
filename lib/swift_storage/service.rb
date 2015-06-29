@@ -41,10 +41,8 @@ class SwiftStorage::Service
     case configuration.auth_version
     when '1.0'
       extend SwiftStorage::Auth::V1_0
-      self.storage_url = File.join(endpoint, 'v1', "AUTH_#{tenant}")
     when '2.0'
       extend SwiftStorage::Auth::V2_0
-      self.storage_url = File.join(endpoint, 'v2', "AUTH_#{tenant}")
     else
       fail "Unsupported auth version #{configuration.auth_version}"
     end

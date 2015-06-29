@@ -11,14 +11,14 @@ module SwiftStorage
          res = request(auth_url, headers: headers)
 
          h = res.header
-         storage_url = h[Headers::STORAGE_URL]
+         self.storage_url = h[Headers::STORAGE_URL]
          @auth_token = h[Headers::AUTH_TOKEN]
          @storage_token = h[Headers::STORAGE_TOKEN]
          @auth_at = Time.now
        end
 
       def authenticated?
-        !!(storage_url && auth_token)
+        !!(self.storage_url && auth_token)
       end
 
       private
