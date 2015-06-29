@@ -4,7 +4,7 @@ module SwiftStorage
                   :auth_method, :authtenant_type
 
     def initialize
-      @auth_version = ENV['SWIFT_STORAGE_AUTH_VERSION'] || '2.0'
+      @auth_version = ENV['SWIFT_STORAGE_AUTH_VERSION'] || '1.0'
       @tenant = ENV['SWIFT_STORAGE_TENANT']
       @username = ENV['SWIFT_STORAGE_USERNAME']
       @password = ENV['SWIFT_STORAGE_PASSWORD']
