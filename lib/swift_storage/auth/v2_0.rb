@@ -67,7 +67,7 @@ module SwiftStorage
 
       def storage_endpoint(service_catalog)
         unless (swift = service_catalog.find { |service| service['type'] == 'object-store' })
-          fail 'No object-store service found'
+          fail SwiftStorage::Errors::NotFoundError.new 'No object-store service found'
         end
         yield swift['endpoints'].sample
       end
