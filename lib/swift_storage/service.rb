@@ -1,9 +1,13 @@
 require 'uri'
+require 'json'
+require 'swift_storage/auth/v1_0'
+require 'swift_storage/auth/v2_0'
 
 class SwiftStorage::Service
-
   include SwiftStorage::Utils
   include SwiftStorage
+  extend Forwardable
+  def_delegators SwiftStorage, :configuration
 
   attr_reader          :tenant,
                        :endpoint,
@@ -17,41 +21,31 @@ class SwiftStorage::Service
                        :storage_path,
                        :temp_url_key
 
-  def initialize(tenant: ENV['SWIFT_STORAGE_TENANT'],
-                 username: ENV['SWIFT_STORAGE_USERNAME'],
-                 password: ENV['SWIFT_STORAGE_PASSWORD'],
-                 endpoint: ENV['SWIFT_STORAGE_ENDPOINT'],
-                 temp_url_key: ENV['SWIFT_STORAGE_TEMP_URL_KEY'])
+  def initialize(tenant: configuration.tenant,
+                 username: configuration.username,
+                 password: configuration.password,
+                 endpoint: configuration.endpoint,
+                 temp_url_key: configuration.temp_url_key)
     @temp_url_key = temp_url_key
 
     %w(tenant username password endpoint).each do |n|
       eval("#{n} or raise ArgumentError, '#{n} is required'")
       eval("@#{n} = #{n}")
     end
-    self.storage_url = File.join(endpoint, 'v1', "AUTH_#{tenant}")
 
+    setup_auth
     @sessions = {}
   end
 
-  def authenticate!
-    @auth_token = nil
-    @storage_token = nil
-    @auth_at = nil
-    headers = {
-      Headers::AUTH_USER => "#{tenant}:#{username}",
-      Headers::AUTH_KEY => password
-    }
-    res = request(auth_url, :headers => headers)
-
-    h = res.header
-    self.storage_url = h[Headers::STORAGE_URL]
-    @auth_token = h[Headers::AUTH_TOKEN]
-    @storage_token = h[Headers::STORAGE_TOKEN]
-    @auth_at = Time.new
-  end
-
-  def authenticated?
-    !!(storage_url && auth_token)
+  def setup_auth
+    case configuration.auth_version
+    when '1.0'
+      extend SwiftStorage::Auth::V1_0
+    when '2.0'
+      extend SwiftStorage::Auth::V2_0
+    else
+      fail "Unsupported auth version #{configuration.auth_version}"
+    end
   end
 
   def containers
@@ -77,10 +71,10 @@ class SwiftStorage::Service
 
     method = method.to_s.upcase
     # Limit methods
-    %w{GET PUT HEAD}.include?(method) or raise ArgumentError, "Only GET, PUT, HEAD supported"
+    %w{GET PUT HEAD}.include?(method) or raise ArgumentError, 'Only GET, PUT, HEAD supported'
 
     expires = expires.to_i
-    object_path_escaped = File.join(storage_path, escape(container), escape(object,"/"))
+    object_path_escaped = File.join(storage_path, escape(container), escape(object, '/'))
     object_path_unescaped = File.join(storage_path, escape(container), object)
 
     string_to_sign = "#{method}\n#{expires}\n#{object_path_unescaped}"
@@ -90,13 +84,13 @@ class SwiftStorage::Service
     klass = scheme == 'http' ? URI::HTTP : URI::HTTPS
 
     temp_url_options = {
-      :scheme => scheme,
-      :host => storage_host,
-      :port => storage_port,
-      :path => object_path_escaped,
-      :query => URI.encode_www_form(
-        :temp_url_sig => sig,
-        :temp_url_expires => expires
+      scheme: scheme,
+      host: storage_host,
+      port: storage_port,
+      path: object_path_escaped,
+      query: URI.encode_www_form(
+        temp_url_sig: sig,
+        temp_url_expires: expires
       )
     }
     klass.build(temp_url_options).to_s
@@ -115,13 +109,15 @@ class SwiftStorage::Service
   end
 
   def request(path_or_url,
-              method: :get,
-              headers: nil,
-              params: nil,
-              input_stream: nil,
-              output_stream: nil)
+      method: :get,
+      headers: nil,
+      params: nil,
+      json_data: nil,
+      input_stream: nil,
+      output_stream: nil)
     headers ||= {}
     headers.merge!(Headers::AUTH_TOKEN => auth_token) if authenticated?
+    headers.merge!(Headers::CONTENT_TYPE => 'application/json') if json_data
     headers.merge!(Headers::CONNECTION => 'keep-alive', Headers::PROXY_CONNECTION => 'keep-alive')
 
     if !(path_or_url =~ /^http/)
@@ -163,6 +159,10 @@ class SwiftStorage::Service
       raise ArgumentError, "Method #{method} not supported"
     end
 
+    if json_data
+      req.body = JSON.generate(json_data)
+    end
+
     if input_stream
       if String === input_stream
         input_stream = StringIO.new(input_stream)
@@ -199,10 +199,6 @@ class SwiftStorage::Service
   attr_reader          :sessions,
                        :username,
                        :password
-
-  def auth_url
-    File.join(endpoint, 'auth/v1.0')
-  end
 
   def check_response!(response)
     case response.code

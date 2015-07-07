@@ -1,5 +1,6 @@
-module SwiftStorage::Utils
+require 'openssl'
 
+module SwiftStorage::Utils
   include SwiftStorage::Errors
 
   def hmac(type, key, data)
@@ -8,16 +9,11 @@ module SwiftStorage::Utils
   end
 
   def sig_to_hex(str)
-    str.unpack("C*").map { |c|
-      c.to_s(16)
-    }.map { |h|
-      h.size == 1 ? "0#{h}" : h
-    }.join
+    Digest.hexencode(str)
   end
 
   def struct(h)
-    return nil if h.empty?
+    return if h.empty?
     Struct.new(*h.keys.map(&:to_sym)).new(*h.values)
   end
-
 end

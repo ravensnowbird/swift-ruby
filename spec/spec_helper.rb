@@ -2,7 +2,6 @@ require "swift-storage"
 require_relative "support/local_server"
 
 module TestServerMixin
-
   def h
     SwiftStorage::Headers
   end
@@ -30,7 +29,7 @@ module TestServerMixin
                                         :password => 'testpassword',
                                         :endpoint => server.base_url,
                                         :temp_url_key => 'A1234'
-                                       )
+                                       ).tap { |s| s.storage_url = test_storage_url }
   end
 
   def test_storage_url

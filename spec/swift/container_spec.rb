@@ -9,4 +9,3 @@ RSpec.describe SwiftStorage::Container do
     )
   end
 end
-
