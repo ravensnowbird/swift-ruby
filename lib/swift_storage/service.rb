@@ -79,7 +79,7 @@ class SwiftStorage::Service
 
     string_to_sign = "#{method}\n#{expires}\n#{object_path_unescaped}"
 
-    sig  = sig_to_hex(hmac('sha1', temp_url_key, string_to_sign))
+    sig = sig_to_hex(hmac('sha1', temp_url_key, string_to_sign))
 
     klass = scheme == 'http' ? URI::HTTP : URI::HTTPS
 
@@ -155,6 +155,8 @@ class SwiftStorage::Service
       req = Net::HTTP::Post.new(path, headers)
     when :put
       req = Net::HTTP::Put.new(path, headers)
+    when :copy
+      req = Net::HTTP::Copy.new(path, headers)
     else
       raise ArgumentError, "Method #{method} not supported"
     end
