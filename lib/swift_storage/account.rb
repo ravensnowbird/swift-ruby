@@ -29,7 +29,4 @@ class SwiftStorage::Account < SwiftStorage::Node
   def relative_path
     ''
   end
-
-
 end
-

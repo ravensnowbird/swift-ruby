@@ -51,8 +51,10 @@ module TestServerMixin
   def random_length
     Random.rand(5000) + 1000
   end
+end
 
-
+SwiftStorage.configure do |config|
+  config.auth_version = '1.0'
 end
 
 RSpec::Matchers.define :send_request do |method, path, options={}|

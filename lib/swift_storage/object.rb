@@ -153,6 +153,29 @@ class SwiftStorage::Object < SwiftStorage::Node
     input_stream
   end
 
+  # Creates a copy of an object that is already stored in Swift.
+  #
+  # @param source [String, SwiftStorage::Object]
+  #   The container and object name of the source object or the SwiftStorage::Object source
+  #
+  # @param optional_headers [Hash]
+  #   All optional headers supported by Swift API for object copy
+  #
+  # @return [SwiftStorage::Object]
+  #   The current object
+  def copy_from(source, optional_headers = {})
+    case source
+    when SwiftStorage::Object
+      path = source.relative_path
+    when String
+      path = source
+    else
+      raise ArgumentError.new('Invalid source type')
+    end
+
+    request(path, method: :copy, headers: optional_headers.merge(H::DESTINATION => relative_path))
+    self
+  end
 
   # Generates a public URL with an expiration time
   #
@@ -184,13 +207,12 @@ class SwiftStorage::Object < SwiftStorage::Node
     File.join(service.storage_url, relative_path)
   end
 
-  private
-
-  H = SwiftStorage::Headers
-
+  # Returns the object's relative path (container name with object name)
+  #
+  # @return [String]
+  #  The object relative path.
+  #
   def relative_path
     File.join(container.name, name)
   end
-
 end
-

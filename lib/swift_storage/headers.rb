@@ -18,6 +18,7 @@ module SwiftStorage
     CONTAINER_READ = 'X-Container-Read'.freeze
     CONTAINER_WRITE = 'X-Container-Write'.freeze
     ACCOUNT_TEMP_URL_KEY = 'X-Account-Meta-Temp-URL-Key'.freeze
+    DESTINATION = 'Destination'.freeze
   end
 
 end
