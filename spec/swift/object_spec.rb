@@ -44,4 +44,46 @@ RSpec.describe SwiftStorage::Object do
     expect(subject.metadata.jon_doe).to eq('a meta')
   end
 
+  describe '#copy_from' do
+    subject { swift_service.containers['some_destination_container'].objects['some_copied_object'] }
+    let(:source) { swift_service.containers['some_source_container'].objects['some_object'] }
+
+    it 'adds optional headers to request' do
+      expect { subject.copy_from(source, 'X-Object-Falcon' => 'Awesome') }.to send_request(
+        :copy,
+        '/v1/AUTH_test/some_source_container/some_object',
+        headers: { h::DESTINATION => 'some_destination_container/some_copied_object', 'X-Object-Falcon' => 'Awesome' }
+      )
+    end
+
+    context 'when source is a SwiftStorage::Object' do
+      it 'copies the source' do
+        expect { subject.copy_from(source) }.to send_request(
+          :copy,
+          '/v1/AUTH_test/some_source_container/some_object',
+          headers: { h::DESTINATION => 'some_destination_container/some_copied_object' }
+        )
+      end
+    end
+
+    context 'when source is a string' do
+      it 'copies the source' do
+        expect { subject.copy_from(source.relative_path) }.to send_request(
+          :copy,
+          '/v1/AUTH_test/some_source_container/some_object',
+          headers: { h::DESTINATION => 'some_destination_container/some_copied_object' }
+        )
+      end
+    end
+
+    context 'when source is an integer' do
+      it 'raises an error' do
+        expect { subject.copy_from(42) }.to raise_error(ArgumentError, 'Invalid source type')
+      end
+    end
+
+    it 'returns destination object' do
+      expect(subject.copy_from(source).relative_path).to eq('some_destination_container/some_copied_object')
+    end
+  end
 end
