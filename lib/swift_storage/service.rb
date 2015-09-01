@@ -125,7 +125,7 @@ class SwiftStorage::Service
     end
 
     # Cache HTTP session as url with no path (scheme, host, port)
-    uri = URI.parse(path_or_url)
+    uri = URI.parse(URI.escape path_or_url)
     path = uri.path
     uri.path = ''
     key = uri.to_s
