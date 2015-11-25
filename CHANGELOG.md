@@ -3,6 +3,12 @@
 This file is written in reverse chronological order, newer releases will
 appear at the top.
 
+## 0.0.8
+
+  * Check token expiration
+    [#9](https://github.com/memoways/swift-ruby/pull/9)
+    @ArmandPredicSis
+
 ## 0.0.7
 
   * URL encoding of special characters
