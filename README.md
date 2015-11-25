@@ -116,3 +116,4 @@ p destination_obj.temp_url(Time.now + (3600 * 10), method: :get)
 
 - Nicolas Goy @kuon
 - @mdouchement
+- @ArmandPredicSis
