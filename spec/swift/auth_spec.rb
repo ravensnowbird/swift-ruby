@@ -49,7 +49,8 @@ RSpec.describe 'Auth' do
       {
         'access' => {
           'token' => {
-            'id' => 'auth_token'
+            'id' => 'auth_token',
+            'expires' => 'expires'
           },
           'serviceCatalog' => [
             {
@@ -80,6 +81,11 @@ RSpec.describe 'Auth' do
     it 'sets the authentication token' do
       subject.authenticate!
       expect(subject.auth_token).to eq('auth_token')
+    end
+
+    it 'sets the expires at' do
+      subject.authenticate!
+      expect(subject.expires).to eq('expires')
     end
 
     context 'when there is an object-store' do
