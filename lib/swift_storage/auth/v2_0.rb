@@ -21,7 +21,7 @@ module SwiftStorage
       end
 
       def authenticated?
-        !!(self.storage_url && auth_token && expires && Time.zone.now < Time.parse(expires))
+        !!(self.storage_url && auth_token && expires && Time.now.utc < Time.parse(expires).utc)
       end
 
       private
