@@ -11,6 +11,7 @@ module SwiftStorage
 
         JSON.parse(res.body).tap do |body|
           @auth_token = body['access']['token']['id']
+          @expires = body['access']['token']['expires']
           storage_endpoint(body['access']['serviceCatalog']) do |endpoint|
             self.storage_url = endpoint['publicURL']
             @storage_token = endpoint['id']
@@ -20,7 +21,7 @@ module SwiftStorage
       end
 
       def authenticated?
-        !!(self.storage_url && auth_token)
+        !!(self.storage_url && auth_token && expires && Time.zone.now < Time.parse(expires))
       end
 
       private

@@ -14,6 +14,7 @@ class SwiftStorage::Service
                        :storage_url,
                        :auth_token,
                        :auth_at,
+                       :expires,
                        :storage_token,
                        :storage_scheme,
                        :storage_host,
