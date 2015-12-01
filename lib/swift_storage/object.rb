@@ -116,13 +116,14 @@ class SwiftStorage::Object < SwiftStorage::Node
             cache_control: nil,
             expires: nil,
             object_manifest: nil,
+            part_location: nil,
             metadata: nil)
 
     h = {}
 
     input_stream.nil? or content_type or raise ArgumentError, 'Content_type is required if input_stream is given'
 
-    object_manifest.nil? or input_stream.nil? or raise ArgumentError, 'Input must be nil on object manigest'
+    object_manifest.nil? or input_stream.nil? or raise ArgumentError, 'Input must be nil on object manifest'
 
     if expires == :never
       expires = Time.at(4_000_000_000)
@@ -144,8 +145,9 @@ class SwiftStorage::Object < SwiftStorage::Node
     merge_metadata(h, metadata)
 
     method =  input_stream || object_manifest ? :put : :post
+    path = part_location || relative_path
 
-    request(relative_path,
+    request(path,
             :method => method,
             :headers => h,
             :input_stream => input_stream)
@@ -173,7 +175,7 @@ class SwiftStorage::Object < SwiftStorage::Node
       raise ArgumentError.new('Invalid source type')
     end
 
-    request(path, method: :copy, headers: optional_headers.merge(H::DESTINATION => relative_path))
+    request(path + '?multipart-manifest=get', method: :copy, headers: optional_headers.merge(H::DESTINATION => relative_path))
     self
   end
 
