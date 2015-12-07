@@ -3,6 +3,12 @@
 This file is written in reverse chronological order, newer releases will
 appear at the top.
 
+## 0.0.9
+
+  * Allow upload of large file (>5GB)
+    [#9](https://github.com/memoways/swift-ruby/pull/10)
+    @ArmandPredicSis
+
 ## 0.0.8
 
   * Check token expiration
