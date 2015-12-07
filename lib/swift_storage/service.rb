@@ -127,11 +127,7 @@ class SwiftStorage::Service
 
     # Cache HTTP session as url with no path (scheme, host, port)
     uri = URI.parse(URI.escape path_or_url)
-    path = if uri.query
-             uri.path + '?' + uri.query
-           else
-             uri.path
-           end
+    path = uri.query ? uri.path + '?' + uri.query : uri.path
     uri.path = ''
     uri.query = nil
     key = uri.to_s
