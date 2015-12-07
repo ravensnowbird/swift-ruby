@@ -83,6 +83,16 @@ File.open('/tmp/Kessel.asteroid', 'r') do |input|
   source_obj.write(input, content_type: 'application/spice')
 end
 
+# Upload data larger than 5GB
+# 1/ Split file larger than 5GB into subfiles, for example:
+system("split -a 5 -d -b size file_path result_path")
+# 2/ upload each part:
+File.open(result_path) do |input|
+  source_obj.write(input, content_type: 'application/txt', part_location: 'container/object/part_number')
+end
+# 3/ Create a manifest
+source_obj.write(object_manifest: 'container/object/')
+
 # Copy an object
 #   Source can be a SwiftStorage::Object or a string like 'source/Kessel.asteroid'
 destination_obj.copy_from(source_obj)
