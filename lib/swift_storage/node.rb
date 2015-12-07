@@ -83,7 +83,8 @@ class SwiftStorage::Node
   end
 
   def exists?
-    request(relative_path, :method => :head) && true
+    request(relative_path, :method => :head)
+    true
   rescue SwiftStorage::Errors::NotFoundError
     false
   end
