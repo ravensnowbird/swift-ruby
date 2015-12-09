@@ -19,14 +19,17 @@ class SwiftStorage::Service
                        :storage_host,
                        :storage_port,
                        :storage_path,
-                       :temp_url_key
+                       :temp_url_key,
+                       :retries
 
   def initialize(tenant: configuration.tenant,
                  username: configuration.username,
                  password: configuration.password,
                  endpoint: configuration.endpoint,
-                 temp_url_key: configuration.temp_url_key)
+                 temp_url_key: configuration.temp_url_key,
+                 retries: configuration.retries)
     @temp_url_key = temp_url_key
+    @retries = retries
 
     %w(tenant username password endpoint).each do |n|
       eval("#{n} or raise ArgumentError, '#{n} is required'")
@@ -115,6 +118,9 @@ class SwiftStorage::Service
       json_data: nil,
       input_stream: nil,
       output_stream: nil)
+
+    tries = retries
+
     headers ||= {}
     headers.merge!(Headers::AUTH_TOKEN => auth_token) if authenticated?
     headers.merge!(Headers::CONTENT_TYPE => 'application/json') if json_data
@@ -181,7 +187,15 @@ class SwiftStorage::Service
       end
     end
 
-    response = s.request(req, &output_proc)
+    begin
+      response = s.request(req, &output_proc)
+    rescue Errno::EPIPE, Errno::EAGAIN, Errno::EWOULDBLOCK, Timeout::Error, Errno::EINVAL, EOFError
+      # Server closed the connection, retry
+      sleep 5
+      retry unless (tries -= 1) <= 0
+      raise OpenStack::Exception::Connection, "Unable to connect to OpenStack::Swift after #{retries} retries"
+    end
+
     begin
       check_response!(response)
     rescue AuthError
