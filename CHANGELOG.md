@@ -3,6 +3,12 @@
 This file is written in reverse chronological order, newer releases will
 appear at the top.
 
+## 0.0.11
+
+  * Some refactoring
+    [#11](https://github.com/PredicSis/swift-ruby/pull/1)
+    @ArmandPredicSis
+
 ## 0.0.10
 
   * Retry on connection error before giving up
