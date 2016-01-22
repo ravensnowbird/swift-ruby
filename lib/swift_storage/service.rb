@@ -69,7 +69,7 @@ class SwiftStorage::Service
     @storage_path = uri.path
   end
 
-  def create_temp_url(container, object, expires, method, ssl, params = {})
+  def create_temp_url(container, object, expires, method, ssl = true, params = {})
     scheme = ssl ? 'https' : 'http'
 
     method = method.to_s.upcase
