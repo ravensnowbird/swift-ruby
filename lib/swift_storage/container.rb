@@ -1,15 +1,10 @@
 class SwiftStorage::Container < SwiftStorage::Node
-
-  parent_node          :service
-
+  parent_node :service
+  header_attributes :bytes_used, :object_count
 
   def relative_path
     name
   end
-
-  header_attributes          :bytes_used,
-                             :object_count
-
 
   # Returns the object collection for this container
   #
@@ -45,8 +40,8 @@ class SwiftStorage::Container < SwiftStorage::Node
     read_acl = read_acl.join(',') if read_acl.respond_to?(:to_ary)
     write_acl = write_acl.join(',') if write_acl.respond_to?(:to_ary)
 
-    h[H::CONTAINER_READ] = read_acl
-    h[H::CONTAINER_WRITE] = write_acl
+    h[CONTAINER_READ] = read_acl
+    h[CONTAINER_WRITE] = write_acl
 
     request(relative_path, :method => :post, :headers => h)
   end
@@ -61,7 +56,4 @@ class SwiftStorage::Container < SwiftStorage::Node
     w = headers.write.split(',') rescue nil
     struct(:read => r, :write => w)
   end
-
-
 end
-

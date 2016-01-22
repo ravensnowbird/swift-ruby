@@ -13,15 +13,11 @@ require "time"
 #  Object cache control header.
 #
 class SwiftStorage::Object < SwiftStorage::Node
-
-
-  parent_node                :container
-
-
-  header_attributes          :content_length,
-                             :content_type,
-                             :expires,
-                             :cache_control
+  parent_node :container
+  header_attributes :content_length,
+                    :content_type,
+                    :expires,
+                    :cache_control
 
   # Read the object data
   #
@@ -130,16 +126,16 @@ class SwiftStorage::Object < SwiftStorage::Node
       cache_control = "public, max_age=4000000000"
     end
 
-    h[H::CONTENT_DISPOSITION] = attachment ? 'attachment' : 'inline'
-    h[H::OBJECT_MANIFEST] = object_manifest if object_manifest
-    h[H::CONTENT_TYPE] = content_type if content_type
-    h[H::EXPIRES] = expires.httpdate if expires
-    h[H::CACHE_CONTROL] = cache_control if cache_control
+    h[CONTENT_DISPOSITION] = attachment ? 'attachment' : 'inline'
+    h[OBJECT_MANIFEST] = object_manifest if object_manifest
+    h[CONTENT_TYPE] = content_type if content_type
+    h[EXPIRES] = expires.httpdate if expires
+    h[CACHE_CONTROL] = cache_control if cache_control
 
     if delete_at
-      h[H::DELETE_AT] = delete_at.to_i.to_s
+      h[DELETE_AT] = delete_at.to_i.to_s
     elsif delete_after
-      h[H::DELETE_AFTER] = delete_after.to_i.to_s
+      h[DELETE_AFTER] = delete_after.to_i.to_s
     end
 
     merge_metadata(h, metadata)
@@ -175,7 +171,7 @@ class SwiftStorage::Object < SwiftStorage::Node
       raise ArgumentError.new('Invalid source type')
     end
 
-    request(path + '?multipart-manifest=get', method: :copy, headers: optional_headers.merge(H::DESTINATION => relative_path))
+    request(path + '?multipart-manifest=get', method: :copy, headers: optional_headers.merge(DESTINATION => relative_path))
     self
   end
 
@@ -191,9 +187,9 @@ class SwiftStorage::Object < SwiftStorage::Node
   #  A temporary URL to the object.
   #
   # @!parse def temp_url(expires=Time.now + 3600, method: :get);end
-  def temp_url(expires=nil, method: :get)
+  def temp_url(expires = nil, ssl: true, method: :get, params: {})
     expires ||= Time.now + 3600
-    service.create_temp_url(container.name, name, expires, method)
+    service.create_temp_url(container.name, name, expires, method, ssl, params)
   end
 
   # Returns the object's URL

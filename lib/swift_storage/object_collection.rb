@@ -1,7 +1,5 @@
 class SwiftStorage::ObjectCollection < SwiftStorage::Node
-
-  parent_node          :container
-
+  parent_node :container
 
   # Return all objects
   #
@@ -37,7 +35,4 @@ class SwiftStorage::ObjectCollection < SwiftStorage::Node
   def get_objects(prefix=nil)
     get_lines(container.name, :prefix => prefix).map { |name| SwiftStorage::Object.new(container, name)}
   end
-
 end
-
-

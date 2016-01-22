@@ -1,5 +1,4 @@
 module SwiftStorage::Errors
-
   class AuthError < StandardError
   end
 
@@ -11,5 +10,4 @@ module SwiftStorage::Errors
 
   class ForbiddenError < StandardError
   end
-
 end
