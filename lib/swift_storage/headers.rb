@@ -1,5 +1,4 @@
 module SwiftStorage
-
   module Headers
     STORAGE_URL = 'X-Storage-Url'.freeze
     AUTH_TOKEN = 'X-Auth-Token'.freeze
@@ -20,5 +19,4 @@ module SwiftStorage
     ACCOUNT_TEMP_URL_KEY = 'X-Account-Meta-Temp-URL-Key'.freeze
     DESTINATION = 'Destination'.freeze
   end
-
 end

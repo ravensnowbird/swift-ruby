@@ -1,7 +1,5 @@
 class SwiftStorage::ContainerCollection < SwiftStorage::Node
-
-  parent_node          :service
-
+  parent_node :service
 
   # Return all containers
   #
@@ -28,7 +26,4 @@ class SwiftStorage::ContainerCollection < SwiftStorage::Node
   def [](name)
     SwiftStorage::Container.new(service, name) if name
   end
-
 end
-
-

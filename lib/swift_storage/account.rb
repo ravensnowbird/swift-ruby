@@ -1,7 +1,5 @@
 class SwiftStorage::Account < SwiftStorage::Node
-
-  parent_node          :service
-
+  parent_node :service
 
   # Write account meta data
   #
@@ -12,7 +10,7 @@ class SwiftStorage::Account < SwiftStorage::Node
   #
   def write(temp_url_key: nil)
     h = {}
-    h[H::ACCOUNT_TEMP_URL_KEY] = temp_url_key if temp_url_key
+    h[ACCOUNT_TEMP_URL_KEY] = temp_url_key if temp_url_key
 
     request(relative_path, :method => :post, :headers => h)
   end

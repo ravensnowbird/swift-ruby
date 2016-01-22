@@ -9,19 +9,19 @@ class SwiftStorage::Service
   extend Forwardable
   def_delegators SwiftStorage, :configuration
 
-  attr_reader          :tenant,
-                       :endpoint,
-                       :storage_url,
-                       :auth_token,
-                       :auth_at,
-                       :expires,
-                       :storage_token,
-                       :storage_scheme,
-                       :storage_host,
-                       :storage_port,
-                       :storage_path,
-                       :temp_url_key,
-                       :retries
+  attr_reader :tenant,
+              :endpoint,
+              :storage_url,
+              :auth_token,
+              :auth_at,
+              :expires,
+              :storage_token,
+              :storage_scheme,
+              :storage_host,
+              :storage_port,
+              :storage_path,
+              :temp_url_key,
+              :retries
 
   def initialize(tenant: configuration.tenant,
                  username: configuration.username,
@@ -69,13 +69,12 @@ class SwiftStorage::Service
     @storage_path = uri.path
   end
 
-  def create_temp_url(container, object, expires, method, options = {})
-
-    scheme = options[:scheme] || storage_scheme
+  def create_temp_url(container, object, expires, method, ssl, params = {})
+    scheme = ssl ? 'https' : 'http'
 
     method = method.to_s.upcase
     # Limit methods
-    %w{GET PUT HEAD}.include?(method) or raise ArgumentError, 'Only GET, PUT, HEAD supported'
+    %w{GET POST PUT HEAD}.include?(method) or raise ArgumentError, 'Only GET, POST, PUT, HEAD supported'
 
     expires = expires.to_i
     object_path_escaped = File.join(storage_path, escape(container), escape(object, '/'))
@@ -85,7 +84,7 @@ class SwiftStorage::Service
 
     sig = sig_to_hex(hmac('sha1', temp_url_key, string_to_sign))
 
-    klass = scheme == 'http' ? URI::HTTP : URI::HTTPS
+    klass = (scheme == 'http') ? URI::HTTP : URI::HTTPS
 
     temp_url_options = {
       scheme: scheme,
@@ -93,8 +92,9 @@ class SwiftStorage::Service
       port: storage_port,
       path: object_path_escaped,
       query: URI.encode_www_form(
-        temp_url_sig: sig,
-        temp_url_expires: expires
+        params.merge(
+          temp_url_sig: sig,
+          temp_url_expires: expires)
       )
     }
     klass.build(temp_url_options).to_s
@@ -113,12 +113,12 @@ class SwiftStorage::Service
   end
 
   def request(path_or_url,
-      method: :get,
-      headers: nil,
-      params: nil,
-      json_data: nil,
-      input_stream: nil,
-      output_stream: nil)
+              method: :get,
+              headers: nil,
+              params: nil,
+              json_data: nil,
+              input_stream: nil,
+              output_stream: nil)
 
     tries = retries
 
@@ -189,34 +189,24 @@ class SwiftStorage::Service
       end
     end
 
-    begin
-      response = s.request(req, &output_proc)
-    rescue Errno::EPIPE, Errno::EAGAIN, Errno::EWOULDBLOCK, Timeout::Error, Errno::EINVAL, EOFError
-      # Server closed the connection, retry
-      sleep 5
-      retry unless (tries -= 1) <= 0
-      raise OpenStack::Exception::Connection, "Unable to connect to OpenStack::Swift after #{retries} retries"
-    end
-
-    begin
-      check_response!(response)
-    rescue AuthError
-      # If token is at least 60 second old, we try to get a new one
-      if @auth_at && (Time.now - @auth_at).to_i > 60
-        authenticate!
-        response = s.request(req, &output_proc)
-      else
-        raise
-      end
-    end
+    response = s.request(req, &output_proc)
+    check_response!(response)
     response
+  rescue AuthError => e
+    # If token is at least 60 second old, we try to get a new one
+    raise e unless @auth_at && (Time.now - @auth_at).to_i > 60
+    authenticate!
+    retry
+  rescue ServerError, Errno::EPIPE, Timeout::Error, Errno::EINVAL, EOFError
+    # Server closed the connection, retry
+    sleep 5
+    retry unless (tries -= 1) <= 0
+    raise SwiftStorage::Errors::ServerError, "Unable to connect to OpenStack::Swift after #{retries} retries"
   end
 
   private
 
-  attr_reader          :sessions,
-                       :username,
-                       :password
+  attr_reader :sessions, :username, :password
 
   def check_response!(response)
     case response.code
@@ -232,5 +222,4 @@ class SwiftStorage::Service
       raise ServerError, response.body
     end
   end
-
 end

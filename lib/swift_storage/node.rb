@@ -1,9 +1,8 @@
 class SwiftStorage::Node
-
   include SwiftStorage::Utils
+  include SwiftStorage::Headers
 
-  attr_accessor          :parent,
-                         :name
+  attr_accessor :parent, :name
 
   def initialize(parent, name=nil)
     @parent = parent
@@ -90,14 +89,7 @@ class SwiftStorage::Node
   end
 
   def delete
-    # We try a few times, as the swift cluster might need time to get ready
-    3.times do |i|
-      begin
-        return request(relative_path, :method => :delete)
-      rescue SwiftStorage::Errors::ServerError
-        sleep(i**2)
-      end
-    end
+    request(relative_path, :method => :delete)
   end
 
   def delete_if_exists
@@ -105,7 +97,6 @@ class SwiftStorage::Node
   rescue SwiftStorage::Errors::NotFoundError
     false
   end
-
 
   private
 
@@ -138,10 +129,4 @@ class SwiftStorage::Node
       headers[full_key] = v.to_s
     end
   end
-
-  private
-  H = SwiftStorage::Headers
-
 end
-
-
