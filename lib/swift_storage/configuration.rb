@@ -1,10 +1,12 @@
 module SwiftStorage
   class Configuration
-    attr_accessor :auth_version, :tenant, :username, :password, :endpoint, :temp_url_key,
-                  :auth_method, :authtenant_type, :retries
+    attr_accessor :auth_version, :ssl_version,
+      :tenant, :username, :password, :endpoint, :temp_url_key,
+      :auth_method, :authtenant_type, :retries
 
     def initialize
       @auth_version = ENV['SWIFT_STORAGE_AUTH_VERSION'] || '1.0'
+      @ssl_version = ENV['SSL_VERSION']
       @tenant = ENV['SWIFT_STORAGE_TENANT']
       @username = ENV['SWIFT_STORAGE_USERNAME']
       @password = ENV['SWIFT_STORAGE_PASSWORD']
