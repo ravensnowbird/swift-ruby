@@ -3,10 +3,16 @@
 This file is written in reverse chronological order, newer releases will
 appear at the top.
 
+## 0.0.12
+
+  * SSL_VERSION is now a part of configuration
+    [#13](https://github.com/PredicSis/swift-ruby/pull/2)
+    @ArmandPredicSis
+
 ## 0.0.11
 
   * Some refactoring
-    [#11](https://github.com/PredicSis/swift-ruby/pull/1)
+    [#12](https://github.com/PredicSis/swift-ruby/pull/1)
     @ArmandPredicSis
 
 ## 0.0.10
