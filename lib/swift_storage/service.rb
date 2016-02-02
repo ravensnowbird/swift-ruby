@@ -140,11 +140,27 @@ class SwiftStorage::Service
     uri.path = ''
     uri.query = nil
 
-    http = Net::HTTP.new(uri.host, uri.port)
-    http.use_ssl = uri.scheme == 'https'
-    http.verify_mode = OpenSSL::SSL::VERIFY_NONE unless ssl_verify
-    http.keep_alive_timeout = 30
-    http.start
+    case method
+    when :get
+      if params.respond_to?(:to_hash)
+        params.reject!{|k,v| v.nil?}
+        path << '?'
+        path << URI.encode_www_form(params)
+      end
+      req = Net::HTTP::Get.new(path, headers)
+    when :delete
+      req = Net::HTTP::Delete.new(path, headers)
+    when :head
+      req = Net::HTTP::Head.new(path, headers)
+    when :post
+      req = Net::HTTP::Post.new(path, headers)
+    when :put
+      req = Net::HTTP::Put.new(path, headers)
+    when :copy
+      req = Net::HTTP::Copy.new(path, headers)
+    else
+      raise ArgumentError, "Method #{method} not supported"
+    end
 
     if input_stream
       if String === input_stream
@@ -162,7 +178,11 @@ class SwiftStorage::Service
       end
     end
 
-    response = http.request(req, &output_proc)
+    response = Net::HTTP.start(uri.host, uri.port) do |http|
+      http.use_ssl = uri.scheme == 'https'
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE unless ssl_verify
+      http.request(req, &output_proc)
+    end
 
     case response
     when Net::HTTPSuccess, Net::HTTPRedirection

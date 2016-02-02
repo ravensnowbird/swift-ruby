@@ -6,6 +6,7 @@ module SwiftStorage
 
     def initialize
       @auth_version = ENV['SWIFT_STORAGE_AUTH_VERSION'] || '1.0'
+      @ssl_verify = true
       @tenant = ENV['SWIFT_STORAGE_TENANT']
       @username = ENV['SWIFT_STORAGE_USERNAME']
       @password = ENV['SWIFT_STORAGE_PASSWORD']

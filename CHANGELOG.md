@@ -5,7 +5,8 @@ appear at the top.
 
 ## 0.0.12
 
-  * SSL_VERSION is now a part of configuration
+  * Net::Http `ssl_verify` can be set to `false` (default is `true`)
+  * Create a new Net::Http session for each request
     [#13](https://github.com/PredicSis/swift-ruby/pull/2)
     @ArmandPredicSis
 
