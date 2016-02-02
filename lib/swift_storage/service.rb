@@ -11,7 +11,6 @@ class SwiftStorage::Service
 
   attr_reader :tenant,
               :endpoint,
-              :ssl_version,
               :ssl_verify,
               :storage_url,
               :auth_token,
@@ -29,11 +28,9 @@ class SwiftStorage::Service
                  username: configuration.username,
                  password: configuration.password,
                  endpoint: configuration.endpoint,
-                 ssl_version: configuration.ssl_version,
                  ssl_verify: configuration.ssl_verify,
                  temp_url_key: configuration.temp_url_key,
                  retries: configuration.retries)
-    @ssl_version = ssl_version
     @ssl_verify = ssl_verify
     @temp_url_key = temp_url_key
     @retries = retries
@@ -145,7 +142,6 @@ class SwiftStorage::Service
 
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = uri.scheme == 'https'
-    http.ssl_version = ssl_version if ssl_version
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE unless ssl_verify
     http.keep_alive_timeout = 30
     http.start

@@ -1,6 +1,6 @@
 module SwiftStorage
   class Configuration
-    attr_accessor :auth_version, :ssl_version, :ssl_verify,
+    attr_accessor :auth_version, :ssl_verify,
       :tenant, :username, :password, :endpoint, :temp_url_key,
       :auth_method, :authtenant_type, :retries
 
