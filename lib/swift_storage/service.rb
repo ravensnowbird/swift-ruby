@@ -12,6 +12,7 @@ class SwiftStorage::Service
   attr_reader :tenant,
               :endpoint,
               :ssl_version,
+              :ssl_verify,
               :storage_url,
               :auth_token,
               :auth_at,
@@ -29,9 +30,11 @@ class SwiftStorage::Service
                  password: configuration.password,
                  endpoint: configuration.endpoint,
                  ssl_version: configuration.ssl_version,
+                 ssl_verify: configuration.ssl_verify,
                  temp_url_key: configuration.temp_url_key,
                  retries: configuration.retries)
     @ssl_version = ssl_version
+    @ssl_verify = ssl_verify
     @temp_url_key = temp_url_key
     @retries = retries
 
@@ -139,43 +142,13 @@ class SwiftStorage::Service
     path = uri.query ? uri.path + '?' + uri.query : uri.path
     uri.path = ''
     uri.query = nil
-    key = uri.to_s
 
-    if sessions[key].nil?
-      s = sessions[key] = Net::HTTP.new(uri.host, uri.port)
-      s.use_ssl = uri.scheme == 'https'
-      s.ssl_version = ssl_version if ssl_version
-      #s.set_debug_output($stderr)
-      s.keep_alive_timeout = 30
-      s.start
-    end
-    s = sessions[key]
-
-    case method
-    when :get
-      if params.respond_to?(:to_hash)
-        params.reject!{|k,v| v.nil?}
-        path << '?'
-        path << URI.encode_www_form(params)
-      end
-      req = Net::HTTP::Get.new(path, headers)
-    when :delete
-      req = Net::HTTP::Delete.new(path, headers)
-    when :head
-      req = Net::HTTP::Head.new(path, headers)
-    when :post
-      req = Net::HTTP::Post.new(path, headers)
-    when :put
-      req = Net::HTTP::Put.new(path, headers)
-    when :copy
-      req = Net::HTTP::Copy.new(path, headers)
-    else
-      raise ArgumentError, "Method #{method} not supported"
-    end
-
-    if json_data
-      req.body = JSON.generate(json_data)
-    end
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = uri.scheme == 'https'
+    http.ssl_version = ssl_version if ssl_version
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE unless ssl_verify
+    http.keep_alive_timeout = 30
+    http.start
 
     if input_stream
       if String === input_stream
@@ -193,15 +166,20 @@ class SwiftStorage::Service
       end
     end
 
-    response = s.request(req, &output_proc)
-    check_response!(response)
-    response
+    response = http.request(req, &output_proc)
+
+    case response
+    when Net::HTTPSuccess, Net::HTTPRedirection
+      return response
+    else
+      raise_error!(response)
+    end
   rescue AuthError => e
     # If token is at least 60 second old, we try to get a new one
     raise e unless @auth_at && (Time.now - @auth_at).to_i > 60
     authenticate!
     retry
-  rescue ServerError, Errno::EPIPE, Timeout::Error, Errno::EINVAL, EOFError
+  rescue Errno::EPIPE, Timeout::Error, Errno::EINVAL, EOFError
     # Server closed the connection, retry
     sleep 5
     retry unless (tries -= 1) <= 0
@@ -212,10 +190,8 @@ class SwiftStorage::Service
 
   attr_reader :sessions, :username, :password
 
-  def check_response!(response)
+  def raise_error!(response)
     case response.code
-    when /^2/
-      return true
     when '401'
       raise AuthError, response.body
     when '403'
