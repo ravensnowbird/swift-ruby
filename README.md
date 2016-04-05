@@ -7,7 +7,7 @@ Ruby client for Openstack swift
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'swift-ruby'
+gem 'swift-storage'
 ```
 
 And then execute:
@@ -16,7 +16,7 @@ And then execute:
 
 Or install it yourself as:
 
-    $ gem install swift-ruby
+    $ gem install swift-storage
 
 ## Usage
 
